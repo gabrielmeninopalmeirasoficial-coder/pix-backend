@@ -30,12 +30,13 @@ function handler(req, res) {
     }
 
     const payload = JSON.stringify({
-      amountCents:   data.amountCents || 3000,
-      description:   'Doacao - Campanha Biel',
-      payerName:     'Doador Anonimo',
-      payerDocument: '11144477735',
-      externalId:    'doacao-' + Date.now()
-    });
+  amountCents:   data.amountCents || 3000,
+  description:   'Doacao - Campanha Biel',
+  payerName:     'Doador Anonimo',
+  payerDocument: '11144477735',
+  externalId:    'doacao-' + Date.now(),
+  tracking:      data.tracking || {}
+});
 
     const options = {
       hostname: 'ggpixapi.com',
