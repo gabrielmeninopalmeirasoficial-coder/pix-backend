@@ -31,10 +31,10 @@ function handler(req, res) {
 
     const payload = JSON.stringify({
   amountCents:   data.amountCents || 3000,
-  description:   'Doacao - Campanha Biel',
-  payerName:     'Doador Anonimo',
+  description:   'Projeto1',
+  payerName:     'Prjo1',
   payerDocument: '11144477735',
-  externalId:    'doacao-' + Date.now(),
+  externalId:    'project1-' + Date.now(),
   tracking:      data.tracking || {}
 });
 
