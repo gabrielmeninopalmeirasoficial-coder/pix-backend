@@ -1,50 +1,47 @@
 const https = require('https');
 
-const API_KEY = 'gk_62467cc663d681c7cfe1dd8f238406b9cb2043c504c59b18';
+const PUBLIC_KEY = 'hojesimdeusestacomigo23_l2om3e295x0uw6nl';
+const SECRET_KEY = 'cxj5x84cfiobzn5ezhc4pwmkqexzl71tlworfv1qfozcvykqk8bixyyoxozh25ba';
 
 function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.writeHead(405);
-    res.end(JSON.stringify({ error: 'Metodo nao permitido' }));
-    return;
-  }
+  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+  if (req.method !== 'POST') { res.writeHead(405); res.end(JSON.stringify({ error: 'Metodo nao permitido' })); return; }
 
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', () => {
     let data;
     try { data = JSON.parse(body); } catch (e) {
-      res.writeHead(400);
-      res.end(JSON.stringify({ error: 'JSON invalido' }));
-      return;
+      res.writeHead(400); res.end(JSON.stringify({ error: 'JSON invalido' })); return;
     }
 
+    const amountReais = (data.amountCents || 3000) / 100;
+
     const payload = JSON.stringify({
-  amountCents:   data.amountCents || 3000,
-  description:   'Projeto1',
-  payerName:     'Prjo1',
-  payerDocument: '11144477735',
-  externalId:    'project1-' + Date.now(),
-  tracking:      data.tracking || {}
-});
+      identifier: 'projeto-' + Date.now(),
+      amount: amountReais,
+      client: {
+        name: 'projeto1',
+        email: 'projeto@projeto.com',
+        phone: '(11) 99999-9999',
+        document: '111.444.777-35'
+      },
+      products: [
+        { id: 'projeto-um', name: 'projeto - um', quantity: 1, price: amountReais }
+      ]
+    });
 
     const options = {
-      hostname: 'ggpixapi.com',
-      path:     '/api/v1/pix/in',
-      method:   'POST',
-      headers:  {
+      hostname: 'app.vizzionpay.com.br',
+      path: '/api/v1/gateway/pix/receive',
+      method: 'POST',
+      headers: {
         'Content-Type': 'application/json',
-        'X-API-Key':    API_KEY,
+        'x-public-key': PUBLIC_KEY,
+        'x-secret-key': SECRET_KEY,
         'Content-Length': Buffer.byteLength(payload)
       }
     };
@@ -53,8 +50,20 @@ function handler(req, res) {
       let apiBody = '';
       apiRes.on('data', chunk => apiBody += chunk);
       apiRes.on('end', () => {
-        res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
-        res.end(apiBody);
+        try {
+          const parsed = JSON.parse(apiBody);
+          // Adapta resposta para o formato que o pix-checkout.js espera
+          const pixCode = parsed.pix && parsed.pix.code;
+          res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            pixCopyPaste: pixCode || null,
+            transactionId: parsed.transactionId || null,
+            raw: parsed
+          }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: 'Erro ao processar resposta' }));
+        }
       });
     });
 
