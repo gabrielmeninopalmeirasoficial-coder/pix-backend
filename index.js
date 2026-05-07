@@ -19,19 +19,34 @@ function handler(req, res) {
     }
 
     const amountReais = (data.amountCents || 3000) / 100;
+    const tracking = data.tracking || {};
+
+    // Monta trackProps com UTMs para a Vizzion Pay repassar à UTMify
+    const trackProps = {
+      utm_source:         tracking.utm_source   || null,
+      utm_medium:         tracking.utm_medium   || null,
+      utm_campaign:       tracking.utm_campaign || null,
+      utm_content:        tracking.utm_content  || null,
+      utm_term:           tracking.utm_term     || null,
+      src:                tracking.src          || null,
+      sck:                tracking.sck          || null,
+      client_user_agent:  tracking.client_user_agent || null
+    };
 
     const payload = JSON.stringify({
       identifier: 'projeto-' + Date.now(),
       amount: amountReais,
       client: {
-        name: 'projeto1',
-        email: 'projeto@projeto.com',
-        phone: '(11) 99999-9999',
+        name:     'projeto1',
+        email:    'projeto@projeto.com',
+        phone:    '(11) 99999-9999',
         document: '111.444.777-35'
       },
       products: [
         { id: 'projeto-um', name: 'projeto - um', quantity: 1, price: amountReais }
-      ]
+      ],
+      metadata: trackProps,
+      callbackUrl: 'https://pix-backend-4c35.onrender.com/webhook'
     });
 
     const options = {
@@ -52,7 +67,6 @@ function handler(req, res) {
       apiRes.on('end', () => {
         try {
           const parsed = JSON.parse(apiBody);
-          // Adapta resposta para o formato que o pix-checkout.js espera
           const pixCode = parsed.pix && parsed.pix.code;
           res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
